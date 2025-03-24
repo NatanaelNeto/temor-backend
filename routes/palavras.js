@@ -1,10 +1,10 @@
 import express from "express";
-import Palavra from './models/palavras.js';
-import { validarArray, validarPalavra } from './utils/middlewares.js';
+import Palavra from '../models/palavras.js';
+import { validarArray, validarPalavra, verificarToken } from '../utils/middlewares.js';
 
-const router = express.Router();
+const routerPalavras = express.Router();
 
-router.get("/", async (req, res) => {
+routerPalavras.get("/", async (req, res) => {
   try {
     const palavras = await Palavra.find();
     res.json(palavras);
@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", validarPalavra, async (req, res) => {
+routerPalavras.post("/", verificarToken, validarPalavra, async (req, res) => {
   try {
     const { texto } = req.body;
     if (!texto) return res.status(400).json({
@@ -50,7 +50,7 @@ router.post("/", validarPalavra, async (req, res) => {
   }
 });
 
-router.post("/multiplas", validarArray, async (req, res) => {
+routerPalavras.post("/multiplas", verificarToken, validarArray, async (req, res) => {
   try {
     const novasPalavras = req.palavrasValidas.map((texto) => ({ texto }));
 
@@ -62,7 +62,7 @@ router.post("/multiplas", validarArray, async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+routerPalavras.delete("/:id", verificarToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -90,4 +90,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-export default router;
+export default routerPalavras;
