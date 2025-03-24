@@ -1,46 +1,65 @@
 import express from "express";
 import Palavra from './models/palavras.js';
-import { validarPalavra } from './utils/middlewares.js';
+import { validarArray, validarPalavra } from './utils/middlewares.js';
 
 const router = express.Router();
 
-router.get("/", async(req, res) => {
-    try {
-        const palavras = await Palavra.find();
-        res.json(palavras);
-    } catch (err) {
-        res.status(500).json({
-            code: 500,
-            error: "Erro ao buscar palavras",
-            message: err,
-        })
-    }
+router.get("/", async (req, res) => {
+  try {
+    const palavras = await Palavra.find();
+    res.json(palavras);
+  } catch (err) {
+    res.status(500).json({
+      code: 500,
+      error: "Erro ao buscar palavras",
+      message: err,
+    })
+  }
 });
 
-router.post("/", validarPalavra, async(req, res) => {
-    try {
-        const { texto } = req.body;
-        if (!texto) return res.status(400).json({
-            code: 400,
-            error: "É necessário enviar uma palavra",
-            message: err,
-        });
+router.post("/", validarPalavra, async (req, res) => {
+  try {
+    const { texto } = req.body;
+    if (!texto) return res.status(400).json({
+      code: 400,
+      error: "É necessário enviar uma palavra",
+      message: err,
+    });
 
-        const novaPalavra = new Palavra({ texto });
-        novaPalavra.save();
+    const novaPalavra = new Palavra({ texto });
+    await novaPalavra.save();
 
-        res.status(201).json({
-            code: 201,
-            message: "Palavra criada com sucesso",
-            texto: novaPalavra.texto,
-        })
-    } catch (err) {
-        res.status(500).json({
-            code: 500,
-            error: "Erro ao criar a palavra",
-            message: err,
-        })
+    res.status(201).json({
+      code: 201,
+      message: "Palavra criada com sucesso",
+      texto: novaPalavra.texto,
+    })
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({
+        code: 400,
+        error: "Palavra já cadastrada",
+        message: err,
+      });
     }
+    res.status(500).json({
+      code: 500,
+      error: "Erro ao criar a palavra",
+      message: err,
+    })
+  }
+});
+
+router.post("/multiplas", validarArray, async (req, res) => {
+  try {
+    const novasPalavras = req.palavrasValidas.map((texto) => ({ texto }));
+
+    const palavrasInseridas = await Palavra.insertMany(novasPalavras, { ordered: false });
+
+    res.status(201).json({ code: 201, message: "Palavras adicionadas com sucesso", palavras: palavrasValidas });
+  } catch (err) {
+    res.status(500).json({ code: 500, error: "Erro ao adicionar palavras", message: err });
+  }
 });
 
 router.delete("/:id", async (req, res) => {
